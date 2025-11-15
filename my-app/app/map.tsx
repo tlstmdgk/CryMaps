@@ -5,29 +5,27 @@ import {
   StyleSheet,
   TouchableOpacity,
   Text,
-  Button, // <-- Import Button
+  Button,
+  Image,
+  Alert, // <-- Import Button
 } from "react-native";
-import MapView, { Marker, MapPressEvent } from "react-native-maps";
+import MapView, { Marker, MapPressEvent, Callout  } from "react-native-maps";
 import * as Location from "expo-location";
 import { signOut } from "../lib/auth"; // <-- Import your signOut function
 import { createClient } from "@supabase/supabase-js";
+const supabase = createClient('https://dcaoifzkyecshfpfgjhk.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRjYW9pZnpreWVjc2hmcGZnamhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMyMTUxMDEsImV4cCI6MjA3ODc5MTEwMX0.-kpLikBwm0yW1Z-2BKBwboMHeCyBQZ-YzsXo-PgjvOs');
+
 
 export default function MapScreen() {
   const [location, setLocation] = useState<Location.LocationObjectCoords | null>(
     null
   );
   const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    loadMarkers();
-  }, []);
-
   //changing stuff
-  const supabase = createClient('https://dcaoifzkyecshfpfgjhk.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRjYW9pZnpreWVjc2hmcGZnamhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMyMTUxMDEsImV4cCI6MjA3ODc5MTEwMX0.-kpLikBwm0yW1Z-2BKBwboMHeCyBQZ-YzsXo-PgjvOs');
   //changing stuff
   const [markers, setMarkers] = useState<any[]>([]);
   const [addingMode, setAddingMode] = useState(false);
   const defaultDesc = "I cried here."
-
 
   // Get user's current location
   useEffect(() => {
@@ -43,6 +41,10 @@ export default function MapScreen() {
       setLoading(false);
 
     })();
+  }, []);
+
+  useEffect(() => {
+    loadMarkers();
   }, []);
 
   // --- Sign Out Function ---
@@ -65,11 +67,8 @@ export default function MapScreen() {
     );
   }
 
-    //changing stuff
-  
-
   async function loadMarkers() {
-    const { data, error } = await supabase.from("cry_spots").select("*");
+    const { data, error } = await supabase.from("cry_locs").select("*");
 
     if (error) {
       console.log(error);
@@ -101,10 +100,29 @@ export default function MapScreen() {
     if (!addingMode) return;
 
     const { latitude, longitude } = e.nativeEvent.coordinate;
-    addMarkerToDB(latitude, longitude, defaultDesc);
-
-    setAddingMode(false);
-    alert("Cry spot added!");
+    
+    Alert.prompt(
+      "Add Cry Spot",
+      "Enter a description for this location:",
+      [
+        {
+          text: "Cancel",
+          onPress: () => setAddingMode(false),
+          style: "cancel"
+        },
+        {
+          text: "Add",
+          onPress: (description) => {
+            const desc = description?.trim() || defaultDesc;
+            addMarkerToDB(latitude, longitude, desc);
+            setAddingMode(false);
+            alert("Cry spot added!");
+          }
+        }
+      ],
+      "plain-text",
+      defaultDesc
+    );
   }
 
   if (loading || !location) {
@@ -133,9 +151,20 @@ export default function MapScreen() {
           <Marker
             key={m.id}
             coordinate={{ latitude: m.latitude, longitude: m.longitude }}
-            title="User's Cry Spot"
-            description={m.description}
-          />
+          >
+            <Callout>
+              <View style={styles.calloutContainer}>
+                <View style={styles.calloutHeader}>
+                  <Image 
+                    source={require('../assets/images/default.png')} 
+                    style={styles.profilePic}
+                  />
+                  <Text style={styles.calloutTitle}>User's Cry Spot</Text>
+                </View>
+                <Text style={styles.calloutDescription}>{m.description}</Text>
+              </View>
+            </Callout>
+          </Marker>
         ))}
       </MapView>
 
@@ -160,7 +189,6 @@ export default function MapScreen() {
   );
 
 }
-
 const styles = StyleSheet.create({
   centered: {
     flex: 1,
@@ -190,8 +218,8 @@ const styles = StyleSheet.create({
   // --- New style for the sign out button ---
   signOutButtonContainer: {
     position: "absolute",
-    top: 60,
-    right: 20,
+    top: 600,
+    right: 300,
     backgroundColor: "white",
     borderRadius: 8,
     padding: 2,
@@ -208,5 +236,29 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.7)",
     padding: 10,
     borderRadius: 8,
+  },
+  calloutContainer: {
+    width: 200, // Set a fixed width to enable wrapping
+    padding: 5,
+  },
+  calloutTitle: {
+    fontWeight: 'bold',
+    fontSize: 14,
+    marginBottom: 5,
+  },
+  calloutHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  calloutDescription: {
+    fontSize: 12,
+    flexWrap: 'wrap', // Enable text wrapping
+  },
+  profilePic: {
+    width: 30,
+    height: 30,
+    borderRadius: 15, // Makes it circular
+    marginRight: 8,
   },
 });
