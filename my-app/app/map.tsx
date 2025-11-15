@@ -5,29 +5,39 @@ import {
   StyleSheet,
   TouchableOpacity,
   Text,
-  Button,
   Image,
-  Alert, // <-- Import Button
+  Alert,
 } from "react-native";
-import MapView, { Marker, MapPressEvent, Callout  } from "react-native-maps";
+import MapView, { Marker, MapPressEvent, Callout } from "react-native-maps";
 import * as Location from "expo-location";
-import { signOut } from "../lib/auth"; // <-- Import your signOut function
-import { createClient } from "@supabase/supabase-js";
-const supabase = createClient('https://dcaoifzkyecshfpfgjhk.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRjYW9pZnpreWVjc2hmcGZnamhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMyMTUxMDEsImV4cCI6MjA3ODc5MTEwMX0.-kpLikBwm0yW1Z-2BKBwboMHeCyBQZ-YzsXo-PgjvOs');
+import { signOut } from "../lib/auth";
+import { supabase } from "../lib/supabase"; // <-- IMPORT from lib
+import { useFonts, Zain_400Regular } from "@expo-google-fonts/zain";
 
+const COLORS = {
+  primary: "#A0C4E2",
+  accent: "#80C6C1",
+  active: "#334E68",
+  background: "#F7F9FA",
+  border: "#DDE3E8",
+  text: "#334E68",
+  white: "#FFFFFF",
+  red: "#E53E3E",
+};
 
 export default function MapScreen() {
   const [location, setLocation] = useState<Location.LocationObjectCoords | null>(
     null
   );
   const [loading, setLoading] = useState(true);
-  //changing stuff
-  //changing stuff
   const [markers, setMarkers] = useState<any[]>([]);
   const [addingMode, setAddingMode] = useState(false);
-  const defaultDesc = "I cried here."
+  const defaultDesc = "I cried here.";
 
-  // Get user's current location
+  const [fontsLoaded] = useFonts({
+    Zain_400Regular,
+  });
+
   useEffect(() => {
     (async () => {
       let { status } = await Location.requestForegroundPermissionsAsync();
@@ -39,7 +49,6 @@ export default function MapScreen() {
       let current = await Location.getCurrentPositionAsync({});
       setLocation(current.coords);
       setLoading(false);
-
     })();
   }, []);
 
@@ -47,38 +56,23 @@ export default function MapScreen() {
     loadMarkers();
   }, []);
 
-  // --- Sign Out Function ---
   async function handleSignOut() {
     try {
       await signOut();
-      // The AuthContext will automatically redirect to /login
     } catch (e: any) {
       console.error(e.message);
     }
   }
-  // -------------------------
-
-  if (loading || !location) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" />
-        <Text>Loading map…</Text>
-      </View>
-    );
-  }
 
   async function loadMarkers() {
     const { data, error } = await supabase.from("cry_locs").select("*");
-
     if (error) {
       console.log(error);
       return;
     }
-
     setMarkers(data);
   }
 
-  // Add marker to Supabase
   async function addMarkerToDB(lat: number, lng: number, desc: string) {
     const { data, error } = await supabase
       .from("cry_locs")
@@ -90,17 +84,13 @@ export default function MapScreen() {
       alert("Error saving marker.");
       return;
     }
-
-    // Append new marker to state
     setMarkers((prev) => [...prev, data[0]]);
   }
 
-  // Handle map tap
   function handleMapPress(e: MapPressEvent) {
     if (!addingMode) return;
-
     const { latitude, longitude } = e.nativeEvent.coordinate;
-    
+
     Alert.prompt(
       "Add Cry Spot",
       "Enter a description for this location:",
@@ -108,28 +98,29 @@ export default function MapScreen() {
         {
           text: "Cancel",
           onPress: () => setAddingMode(false),
-          style: "cancel"
+          style: "cancel",
         },
         {
           text: "Add",
-          onPress: (description) => {
+          onPress: (description: string | undefined) => {
             const desc = description?.trim() || defaultDesc;
             addMarkerToDB(latitude, longitude, desc);
             setAddingMode(false);
-            alert("Cry spot added!");
-          }
-        }
+          },
+        },
       ],
       "plain-text",
       defaultDesc
     );
   }
 
-  if (loading || !location) {
+  if (loading || !location || !fontsLoaded) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" />
-        <Text>Loading map…</Text>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+        <Text style={{ color: COLORS.text, marginTop: 10 }}>
+          Loading map…
+        </Text>
       </View>
     );
   }
@@ -152,14 +143,19 @@ export default function MapScreen() {
             key={m.id}
             coordinate={{ latitude: m.latitude, longitude: m.longitude }}
           >
+            {/* pin */}
+            <View style={styles.pin}>
+              <View style={styles.pinInner} />
+            </View>
+
             <Callout>
               <View style={styles.calloutContainer}>
                 <View style={styles.calloutHeader}>
-                  <Image 
-                    source={require('../assets/images/default.png')} 
+                  <Image
+                    source={require("../assets/images/default.png")}
                     style={styles.profilePic}
                   />
-                  <Text style={styles.calloutTitle}>User's Cry Spot</Text>
+                  <Text style={styles.calloutTitle}>A Cry Spot</Text>
                 </View>
                 <Text style={styles.calloutDescription}>{m.description}</Text>
               </View>
@@ -168,38 +164,56 @@ export default function MapScreen() {
         ))}
       </MapView>
 
-      {/* Add cry spot button */}
+      {/* button to add cry spot */}
       <TouchableOpacity
-        style={[styles.addButton, addingMode && { backgroundColor: "#34C759" }]}
+        style={[
+          styles.addButton,
+          {
+            backgroundColor: addingMode ? COLORS.white : COLORS.primary,
+          },
+        ]}
         onPress={() => setAddingMode((prev) => !prev)}
       >
-        <Text style={styles.addButtonText}>{addingMode ? "✔" : "+"}</Text>
+        <Text style={[
+          styles.addButtonText,
+          {
+            color: addingMode ? COLORS.primary : COLORS.text 
+          }
+        ]}>
+          {addingMode ? "✔" : "+"}
+        </Text>
       </TouchableOpacity>
 
       {addingMode && (
         <View style={styles.addingBanner}>
-          <Text style={{ color: "white", fontWeight: "bold" }}>Tap anywhere on the map to add a cry spot</Text>
+          <Text style={styles.addingBannerText}>
+            Tap anywhere on the map to add a cry spot
+          </Text>
         </View>
       )}
 
-      <View style={styles.signOutButtonContainer}>
-        <Button title="Sign Out" onPress={handleSignOut} color="#ff0000" />
-      </View>
+      {/* signout button */}
+      <TouchableOpacity
+        style={styles.signOutButton}
+        onPress={handleSignOut}
+      >
+        <Text style={styles.signOutButtonText}>Sign Out</Text>
+      </TouchableOpacity>
     </View>
   );
-
 }
+
 const styles = StyleSheet.create({
   centered: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: COLORS.background,
   },
   addButton: {
     position: "absolute",
     bottom: 40,
     right: 20,
-    backgroundColor: "#007AFF",
     width: 60,
     height: 60,
     borderRadius: 30,
@@ -209,56 +223,88 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 },
+    elevation: 5,
   },
   addButtonText: {
-    color: "white",
+    // color: COLORS.text,
     fontSize: 32,
     marginTop: -3,
   },
-  // --- New style for the sign out button ---
-  signOutButtonContainer: {
+  signOutButton: {
     position: "absolute",
-    top: 600,
-    right: 300,
-    backgroundColor: "white",
+    top: 60,
+    right: 20,
+    backgroundColor: COLORS.white,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderRadius: 8,
-    padding: 2,
-    elevation: 5, // Android shadow
-    shadowColor: "#000", // iOS shadow
+    elevation: 5,
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 2,
   },
+  signOutButtonText: {
+    color: COLORS.red,
+    fontSize: 16,
+    fontWeight: "bold",
+  },
   addingBanner: {
     position: "absolute",
-    top: 50,
+    top: 110,
     alignSelf: "center",
-    backgroundColor: "rgba(0,0,0,0.7)",
+    backgroundColor: COLORS.text,
     padding: 10,
     borderRadius: 8,
   },
+  addingBannerText: {
+    color: COLORS.white,
+    fontWeight: "bold",
+  },
   calloutContainer: {
-    width: 200, // Set a fixed width to enable wrapping
+    width: 200,
     padding: 5,
+    backgroundColor: COLORS.white,
   },
   calloutTitle: {
-    fontWeight: 'bold',
-    fontSize: 14,
+    fontFamily: "Zain_400Regular",
+    fontSize: 18,
+    color: COLORS.text,
     marginBottom: 5,
   },
   calloutHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 8,
   },
   calloutDescription: {
-    fontSize: 12,
-    flexWrap: 'wrap', // Enable text wrapping
+    fontSize: 14,
+    color: COLORS.text,
+    flexWrap: "wrap",
   },
   profilePic: {
     width: 30,
     height: 30,
-    borderRadius: 15, // Makes it circular
+    borderRadius: 15,
     marginRight: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  pin: {
+    backgroundColor: "transparent",
+    width: 30,
+    height: 40,
+    justifyContent: "flex-end",
+    alignItems: "center",
+  },
+  pinInner: {
+    backgroundColor: COLORS.primary,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderBottomRightRadius: 0,
+    transform: [{ rotate: "45deg" }],
+    borderWidth: 2,
+    borderColor: COLORS.white,
   },
 });
