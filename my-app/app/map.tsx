@@ -65,26 +65,62 @@ export default function MapScreen() {
   }
 
   async function loadMarkers() {
-    const { data, error } = await supabase.from("cry_locs").select("*");
+    // This new select query joins the 'users' table
+    // and gets the name and profile_picture_url
+    const { data, error } = await supabase
+        .from("cry_locs")
+        .select(
+        `*,
+        users (name, profile_picture_url)
+        `
+        );
+
     if (error) {
-      console.log(error);
-      return;
+        console.log(error);
+        return;
     }
     setMarkers(data);
   }
 
+  // Add marker to Supabase
   async function addMarkerToDB(lat: number, lng: number, desc: string) {
+    // 1. Get the current user
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      console.error("No user logged in to add a marker");
+      return;
+    }
+
+    // 2. Insert the marker WITH the user_id
     const { data, error } = await supabase
       .from("cry_locs")
-      .insert([{ latitude: lat, longitude: lng, description: desc }])
-      .select();
+      .insert([
+        {
+          latitude: lat,
+          longitude: lng,
+          description: desc,
+          user_id: user.id, // <-- This is the new, important line
+        },
+      ])
+      .select(
+        // 3. Select the joined data right away to add to the map
+        `*,
+         users (name, profile_picture_url)
+        `
+      )
+      .single(); // We only inserted one, so get a single object back
 
     if (error) {
       console.log(error);
       alert("Error saving marker.");
       return;
     }
-    setMarkers((prev) => [...prev, data[0]]);
+
+    // Append new marker to state (it already has the 'users' object!)
+    setMarkers((prev) => [...prev, data]);
   }
 
   function handleMapPress(e: MapPressEvent) {
@@ -139,28 +175,42 @@ export default function MapScreen() {
         }}
       >
         {markers.map((m) => (
-          <Marker
-            key={m.id}
-            coordinate={{ latitude: m.latitude, longitude: m.longitude }}
-          >
-            {/* pin */}
-            <View style={styles.pin}>
-              <View style={styles.pinInner} />
-            </View>
-
-            <Callout>
-              <View style={styles.calloutContainer}>
-                <View style={styles.calloutHeader}>
-                  <Image
-                    source={require("../assets/images/default.png")}
-                    style={styles.profilePic}
-                  />
-                  <Text style={styles.calloutTitle}>A Cry Spot</Text>
+            <Marker
+                key={m.id}
+                coordinate={{ latitude: m.latitude, longitude: m.longitude }}
+            >
+                {/* This is our custom-styled pin */}
+                <View style={styles.pin}>
+                <View style={styles.pinInner} />
                 </View>
-                <Text style={styles.calloutDescription}>{m.description}</Text>
-              </View>
-            </Callout>
-          </Marker>
+
+                <Callout>
+                <View style={styles.calloutContainer}>
+                    <View style={styles.calloutHeader}>
+                    {/* NEW LOGIC:
+                        Use the profile_picture_url if it exists,
+                        otherwise use the default.png
+                    */}
+                    <Image
+                        source={
+                        m.users && m.users.profile_picture_url
+                            ? { uri: m.users.profile_picture_url }
+                            : require("../assets/images/default.png")
+                        }
+                        style={styles.profilePic}
+                    />
+                    {/* NEW LOGIC:
+                        Use the user's name if it exists,
+                        otherwise use "Anonymous Cry"
+                    */}
+                    <Text style={styles.calloutTitle}>
+                        {m.users ? m.users.name : "Anonymous Cry"}
+                    </Text>
+                    </View>
+                    <Text style={styles.calloutDescription}>{m.description}</Text>
+                </View>
+                </Callout>
+            </Marker>
         ))}
       </MapView>
 
