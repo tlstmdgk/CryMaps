@@ -1,10 +1,20 @@
 import React, { useEffect, useState } from "react";
-import { View, ActivityIndicator, StyleSheet, TouchableOpacity, Text } from "react-native";
+import {
+  View,
+  ActivityIndicator,
+  StyleSheet,
+  TouchableOpacity,
+  Text,
+  Button, // <-- Import Button
+} from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
+import { signOut } from "../lib/auth"; // <-- Import your signOut function
 
 export default function MapScreen() {
-  const [location, setLocation] = useState<Location.LocationObjectCoords | null>(null);
+  const [location, setLocation] = useState<Location.LocationObjectCoords | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
 
   // Get user's current location
@@ -21,6 +31,17 @@ export default function MapScreen() {
       setLoading(false);
     })();
   }, []);
+
+  // --- Sign Out Function ---
+  async function handleSignOut() {
+    try {
+      await signOut();
+      // The AuthContext will automatically redirect to /login
+    } catch (e: any) {
+      console.error(e.message);
+    }
+  }
+  // -------------------------
 
   if (loading || !location) {
     return (
@@ -55,9 +76,18 @@ export default function MapScreen() {
       </MapView>
 
       {/* Floating Add Button */}
-      <TouchableOpacity style={styles.addButton} onPress={() => alert("Add cry spot screen coming soon!")}>
+      <TouchableOpacity
+        style={styles.addButton}
+        onPress={() => alert("Add cry spot screen coming soon!")}
+      >
         <Text style={styles.addButtonText}>+</Text>
       </TouchableOpacity>
+
+      {/* --- Sign Out Button --- */}
+      <View style={styles.signOutButtonContainer}>
+        <Button title="Sign Out" onPress={handleSignOut} color="#ff0000" />
+      </View>
+      {/* --------------------- */}
     </View>
   );
 }
@@ -87,5 +117,19 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 32,
     marginTop: -3,
+  },
+  // --- New style for the sign out button ---
+  signOutButtonContainer: {
+    position: "absolute",
+    top: 60,
+    right: 20,
+    backgroundColor: "white",
+    borderRadius: 8,
+    padding: 2,
+    elevation: 5, // Android shadow
+    shadowColor: "#000", // iOS shadow
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
   },
 });
