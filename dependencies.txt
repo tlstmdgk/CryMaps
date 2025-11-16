@@ -1,0 +1,6 @@
+npm install @react-navigation/elements
+npm install @react-navigation/native-stack
+npx expo install @expo-google-fonts/zain expo-font
+npm install async-storage
+npx expo install expo-image-picker
+npm install base64-arraybuffer
