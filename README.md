@@ -4,7 +4,7 @@ CryMaps is a mobile application designed to normalize emotional release and help
 
 <p align="center">
 <!-- Replace with your actual logo/screenshot path or URL -->
-<img src="./assets/images/icon.png" width="150" alt="CryMaps Logo" />
+<img src="./assets/images/crymaps-icon.png" width="150" alt="CryMaps Logo" />
 </p>
 
 ✨ Features
