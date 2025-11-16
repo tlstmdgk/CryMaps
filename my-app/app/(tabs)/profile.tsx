@@ -12,7 +12,6 @@ export default function ProfileScreen() {
   const [user, setUser] = useState<any>(null);
   const [userName, setUserName] = useState<string>("");
 
-  // Load logged-in user
   useEffect(() => {
     const getUser = async () => {
       const { data } = await supabase.auth.getUser();
@@ -22,7 +21,7 @@ export default function ProfileScreen() {
     getUser();
   }, []);
 
-  // Load the user's current avatar
+  // load the user's current avatar
   const fetchProfile = async (id: string) => {
     const { data, error } = await supabase
       .from("users")
@@ -40,7 +39,7 @@ export default function ProfileScreen() {
     }
   };
 
-  // ------ Pick & Upload Image ------
+  // pick n upload image
   const uploadAvatar = async () => {
     try {
       setUploading(true);
@@ -50,14 +49,12 @@ export default function ProfileScreen() {
         return;
       }
 
-      // Ask for permission
       const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permission.granted) {
         alert("Permission to access camera roll is required!");
         return;
       }
 
-      // Pick the image
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
@@ -69,31 +66,28 @@ export default function ProfileScreen() {
 
       const file = result.assets[0];
       
-      // Generate unique filename with timestamp
+      // generate unique filename w/ timestamp
       const fileExt = file.uri.split(".").pop()?.toLowerCase() ?? "jpg";
       const timestamp = Date.now();
       const fileName = `${user.id}_${timestamp}.${fileExt}`;
 
       console.log("Reading file:", file.uri);
 
-      // Read file as base64
       const base64 = await FileSystem.readAsStringAsync(file.uri, {
         encoding: FileSystem.EncodingType.Base64,
       });
 
       console.log("Base64 length:", base64.length);
 
-      // Convert base64 to ArrayBuffer
       const arrayBuffer = decode(base64);
 
       console.log("ArrayBuffer size:", arrayBuffer.byteLength);
 
-      // Determine content type
       const contentType = fileExt === "png" ? "image/png" : "image/jpeg";
 
       console.log("Uploading to Supabase...");
 
-      // Upload to Supabase Storage
+      // upload to supabase storage
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from("avatars")
         .upload(fileName, arrayBuffer, {
@@ -109,7 +103,6 @@ export default function ProfileScreen() {
 
       console.log("Upload successful:", uploadData);
 
-      // Get public URL
       const { data: urlData } = supabase.storage
         .from("avatars")
         .getPublicUrl(fileName);
@@ -118,7 +111,6 @@ export default function ProfileScreen() {
 
       console.log("Public URL:", publicUrl);
 
-      // Update the DB
       const { error: dbError } = await supabase
         .from("users")
         .update({ profile_picture_url: publicUrl })
