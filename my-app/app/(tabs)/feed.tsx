@@ -28,7 +28,7 @@ export default function FeedScreen() {
       .from('cry_locs')
       .select('*')
       .order('created_at', { ascending: false })
-      .limit(10);
+      .limit(20);
 
     if (cryError) throw cryError;
 
