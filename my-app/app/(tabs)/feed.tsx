@@ -3,7 +3,6 @@ import { View, Text, Image, FlatList, StyleSheet, ActivityIndicator, RefreshCont
 import { useFonts, Zain_400Regular } from "@expo-google-fonts/zain";
 import { supabase } from "../../lib/supabase";
 
-// Add type definition
 interface Post {
   id: string;
   created_at: string;
@@ -16,7 +15,7 @@ interface Post {
 }
 
 export default function FeedScreen() {
-  const [posts, setPosts] = useState<Post[]>([]); // Add type here
+  const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [fontsLoaded] = useFonts({ Zain_400Regular });
@@ -32,11 +31,11 @@ export default function FeedScreen() {
 
     if (cryError) throw cryError;
 
-    // Filter out posts with invalid user_ids and get unique user IDs
+    // filter out posts with invalid user_ids and get unique user ids
     const validCryLocs = cryLocs.filter(post => post.user_id && post.user_id !== 'null');
     const userIds = [...new Set(validCryLocs.map(post => post.user_id))];
 
-    // Only fetch users if we have valid IDs
+    // only fetch users if we have valid IDs
     if (userIds.length === 0) {
       setPosts([]);
       return;
@@ -50,17 +49,17 @@ export default function FeedScreen() {
 
     if (userError) throw userError;
 
-    // Create a map of users by ID
+    // create a map of users by id
     const userMap = users.reduce((acc, user) => {
       acc[user.id] = user;
       return acc;
     }, {} as any);
 
-    // Combine posts with user data and profile pictures
+    // combine posts with user data and profile pictures
     const postsWithUserData = validCryLocs.map((post) => {
       const user = userMap[post.user_id];
       
-      // Use profile_picture_url from users table to get the image from storage
+      // use profile_picture_url from users table to get the image from storage
       let profilePictureUrl = '';
       if (user?.profile_picture_url) {
         profilePictureUrl = user.profile_picture_url;
