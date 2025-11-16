@@ -55,8 +55,7 @@ export default function MapScreen() {
   }
 
   async function loadMarkers() {
-    // This new select query joins the 'users' table
-    // and gets the name and profile_picture_url
+    // joins the 'users' table and gets the name and profile_picture_url
     const { data, error } = await supabase
         .from("cry_locs")
         .select(
@@ -72,9 +71,9 @@ export default function MapScreen() {
     setMarkers(data);
   }
 
-  // Add marker to Supabase
+  // add marker to supabase
   async function addMarkerToDB(lat: number, lng: number, desc: string) {
-    // 1. Get the current user
+    // get the current user
     const {
       data: { user },
     } = await supabase.auth.getUser();
