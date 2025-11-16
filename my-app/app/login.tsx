@@ -10,10 +10,10 @@ import {
   ActivityIndicator,
   Image,
 } from "react-native";
-import { signInWithEmail } from "../lib/auth"; // Only import what's needed
+import { signInWithEmail } from "../lib/auth";
 import { useFonts, Zain_400Regular } from "@expo-google-fonts/zain";
 import { COLORS } from "../lib/theme";
-import { useRouter } from "expo-router"; // Import useRouter
+import { useRouter } from "expo-router";
 
 export default function LoginScreen() {
   const router = useRouter(); // For navigation
